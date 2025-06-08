@@ -1,25 +1,25 @@
-import React, { useCallback, useState, useRef } from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import {
-    ReactFlow,
-    Background,
-    Controls,
-    MiniMap,
-    useNodesState,
-    useEdgesState,
     addEdge,
+    Background,
+    BackgroundVariant,
     Connection,
+    Controls,
     Edge,
+    MiniMap,
+    Node,
+    ReactFlow,
     ReactFlowProvider,
-
-    Node
+    useEdgesState,
+    useNodesState
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { ComponentPalette } from './ComponentPalette';
-import { WorkflowNode } from './nodes/WorkflowNode';
-import { ComponentPaletteItem, WorkflowNodeData } from '../types/workflow';
-import { Button } from './ui/button';
-import { Save, Play, Download, Upload } from 'lucide-react';
+import {ComponentPalette} from './ComponentPalette';
+import {WorkflowNode} from './nodes/WorkflowNode';
+import {ComponentPaletteItem, WorkflowNodeData} from '../types/workflow';
+import {Button} from './ui/button';
+import {Download, Play, Save, Upload} from 'lucide-react';
 
 const nodeTypes = {
     workflowNode: WorkflowNode,
@@ -29,7 +29,7 @@ const initialNodes: Node<WorkflowNodeData>[] = [
     {
         id: '1',
         type: 'workflowNode',
-        position: { x: 100, y: 250 },
+        position: { x: 100, y: 240 },
         data: {
             label: 'Start',
             type: 'trigger',
@@ -63,6 +63,14 @@ export const WorkflowEditor: React.FC = () => {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
+    const snapToGrid = (position: { x: number; y: number }) => {
+        const gridSize = 20;
+        return {
+            x: Math.round(position.x / gridSize) * gridSize,
+            y: Math.round(position.y / gridSize) * gridSize
+        };
+    };
+
     const onDrop = useCallback(
         (event: React.DragEvent) => {
             event.preventDefault();
@@ -72,10 +80,12 @@ export const WorkflowEditor: React.FC = () => {
             }
 
             const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-            const position = reactFlowInstance.screenToFlowPosition({
+            const rawPosition = reactFlowInstance.screenToFlowPosition({
                 x: event.clientX - reactFlowBounds.left,
                 y: event.clientY - reactFlowBounds.top,
             });
+
+            const position = snapToGrid(rawPosition);
 
             const newNode: Node<WorkflowNodeData> = {
                 id: `${Date.now()}`,
@@ -180,8 +190,15 @@ export const WorkflowEditor: React.FC = () => {
                         nodeTypes={nodeTypes}
                         fitView
                         attributionPosition="bottom-left"
+                        snapToGrid={true}
+                        snapGrid={[20, 20]}
                     >
-                        <Background color="#f1f5f9" />
+                        <Background
+                            color="#e2e8f0"
+                            variant={BackgroundVariant.Dots}
+                            gap={20}
+                            size={1}
+                        />
                         <Controls />
                         <MiniMap
                             nodeColor={(node) => {
