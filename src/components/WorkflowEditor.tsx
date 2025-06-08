@@ -19,8 +19,9 @@ import {ComponentPalette} from './ComponentPalette';
 import {WorkflowNode} from './nodes/WorkflowNode';
 import {ComponentPaletteItem, WorkflowNodeData} from '../types/workflow';
 import {Button} from './ui/button';
-import {Download, Play, Save, Upload} from 'lucide-react';
+import {Download, Monitor, Moon, Play, Save, Sun, Upload} from 'lucide-react';
 import {WorkflowProvider} from '../contexts/WorkflowContext';
+import {useTheme} from '../hooks/useTheme';
 
 const nodeTypes = {
     workflowNode: WorkflowNode,
@@ -47,7 +48,22 @@ export const WorkflowEditor: React.FC = () => {
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [draggedItem, setDraggedItem] = useState<ComponentPaletteItem | null>(null);
+    const { theme, toggleTheme, getThemeLabel } = useTheme();
+
+    const getThemeIcon = () => {
+        switch (theme) {
+            case 'light':
+                return Sun;
+            case 'dark':
+                return Moon;
+            case 'system':
+                return Monitor;
+            default:
+                return Monitor;
+        }
+    };
 
     const onConnect = useCallback(
         (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -114,7 +130,7 @@ export const WorkflowEditor: React.FC = () => {
         }
     }, [reactFlowInstance]);
 
-    const onLoad = useCallback(() => {
+    const onLoadFromStorage = useCallback(() => {
         const savedFlow = localStorage.getItem('workflow');
         if (savedFlow && reactFlowInstance) {
             const flow = JSON.parse(savedFlow);
@@ -123,6 +139,36 @@ export const WorkflowEditor: React.FC = () => {
             reactFlowInstance.setViewport(flow.viewport);
         }
     }, [reactFlowInstance, setNodes, setEdges]);
+
+    const onLoadFromFile = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target?.result as string;
+                const flow = JSON.parse(content);
+
+                if (flow.nodes && flow.edges) {
+                    setNodes(flow.nodes);
+                    setEdges(flow.edges);
+                    if (reactFlowInstance && flow.viewport) {
+                        reactFlowInstance.setViewport(flow.viewport);
+                    }
+                    console.log('Workflow loaded from file:', flow);
+                } else {
+                    console.error('Invalid workflow file format');
+                }
+            } catch (error) {
+                console.error('Error parsing workflow file:', error);
+            }
+        };
+        reader.readAsText(file);
+
+        // Reset input value
+        event.target.value = '';
+    }, [setNodes, setEdges, reactFlowInstance]);
 
     const onExport = useCallback(() => {
         if (reactFlowInstance) {
@@ -190,9 +236,28 @@ export const WorkflowEditor: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={onLoad}>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".json"
+                            onChange={onLoadFromFile}
+                            className="hidden"
+                        />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
                             <Upload className="w-4 h-4 mr-2" />
                             Load
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={toggleTheme}
+                            title={getThemeLabel()}
+                        >
+                            {React.createElement(getThemeIcon(), { className: "w-4 h-4" })}
                         </Button>
                         <Button variant="outline" size="sm" onClick={onSave}>
                             <Save className="w-4 h-4 mr-2" />
