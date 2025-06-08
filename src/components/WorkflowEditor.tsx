@@ -1,4 +1,4 @@
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
     addEdge,
     Background,
@@ -20,6 +20,7 @@ import {WorkflowNode} from './nodes/WorkflowNode';
 import {ComponentPaletteItem, WorkflowNodeData} from '../types/workflow';
 import {Button} from './ui/button';
 import {Download, Play, Save, Upload} from 'lucide-react';
+import {WorkflowProvider} from '../contexts/WorkflowContext';
 
 const nodeTypes = {
     workflowNode: WorkflowNode,
@@ -143,6 +144,38 @@ export const WorkflowEditor: React.FC = () => {
         // Здесь будет логика выполнения workflow
     }, [nodes, edges]);
 
+    const onDeleteNode = useCallback((nodeId: string) => {
+        setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+        setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+    }, [setNodes, setEdges]);
+
+    const onKeyDown = useCallback((event: KeyboardEvent) => {
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+            const selectedNodes = nodes.filter((node) => node.selected);
+            const selectedEdges = edges.filter((edge) => edge.selected);
+
+            if (selectedNodes.length > 0) {
+                const nodeIds = selectedNodes.map((node) => node.id);
+                setNodes((nds) => nds.filter((node) => !nodeIds.includes(node.id)));
+                setEdges((eds) => eds.filter((edge) =>
+                    !nodeIds.includes(edge.source) && !nodeIds.includes(edge.target)
+                ));
+            }
+
+            if (selectedEdges.length > 0) {
+                const edgeIds = selectedEdges.map((edge) => edge.id);
+                setEdges((eds) => eds.filter((edge) => !edgeIds.includes(edge.id)));
+            }
+        }
+    }, [nodes, edges, setNodes, setEdges]);
+
+    useEffect(() => {
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, [onKeyDown]);
+
     return (
         <div className="h-screen flex bg-background">
             {/* Component Palette */}
@@ -178,42 +211,44 @@ export const WorkflowEditor: React.FC = () => {
 
                 {/* React Flow Canvas */}
                 <div className="flex-1" ref={reactFlowWrapper}>
-                    <ReactFlow
-                        nodes={nodes}
-                        edges={edges}
-                        onNodesChange={onNodesChange}
-                        onEdgesChange={onEdgesChange}
-                        onConnect={onConnect}
-                        onInit={setReactFlowInstance}
-                        onDrop={onDrop}
-                        onDragOver={onDragOver}
-                        nodeTypes={nodeTypes}
-                        fitView
-                        attributionPosition="bottom-left"
-                        snapToGrid={true}
-                        snapGrid={[20, 20]}
-                    >
-                        <Background
-                            color="#e2e8f0"
-                            variant={BackgroundVariant.Dots}
-                            gap={20}
-                            size={1}
-                        />
-                        <Controls />
-                        <MiniMap
-                            nodeColor={(node) => {
-                                const nodeData = node.data as WorkflowNodeData;
-                                switch (nodeData.type) {
-                                    case 'trigger': return '#10b981';
-                                    case 'action': return '#3b82f6';
-                                    case 'condition': return '#f59e0b';
-                                    case 'timer': return '#8b5cf6';
-                                    default: return '#6b7280';
-                                }
-                            }}
-                            className="bg-background border border-border rounded-lg"
-                        />
-                    </ReactFlow>
+                    <WorkflowProvider value={{ onDeleteNode }}>
+                        <ReactFlow
+                            nodes={nodes}
+                            edges={edges}
+                            onNodesChange={onNodesChange}
+                            onEdgesChange={onEdgesChange}
+                            onConnect={onConnect}
+                            onInit={setReactFlowInstance}
+                            onDrop={onDrop}
+                            onDragOver={onDragOver}
+                            nodeTypes={nodeTypes}
+                            fitView
+                            attributionPosition="bottom-left"
+                            snapToGrid={true}
+                            snapGrid={[20, 20]}
+                        >
+                            <Background
+                                color="#e2e8f0"
+                                variant={BackgroundVariant.Dots}
+                                gap={20}
+                                size={1}
+                            />
+                            <Controls />
+                            <MiniMap
+                                nodeColor={(node) => {
+                                    const nodeData = node.data as WorkflowNodeData;
+                                    switch (nodeData.type) {
+                                        case 'trigger': return '#10b981';
+                                        case 'action': return '#3b82f6';
+                                        case 'condition': return '#f59e0b';
+                                        case 'timer': return '#8b5cf6';
+                                        default: return '#6b7280';
+                                    }
+                                }}
+                                className="bg-background border border-border rounded-lg"
+                            />
+                        </ReactFlow>
+                    </WorkflowProvider>
                 </div>
             </div>
         </div>

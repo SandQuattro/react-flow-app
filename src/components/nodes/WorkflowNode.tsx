@@ -1,21 +1,22 @@
 import React from 'react';
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import {Handle, NodeProps, Position} from '@xyflow/react';
 import {
-    Play,
+    Clock,
+    Database,
+    Filter,
+    GitBranch,
     Globe,
     Mail,
-    Database,
-    Clock,
-    GitBranch,
-    Filter,
+    Play,
     RefreshCw,
-    Split,
-    Webhook,
     Settings,
-    Trash2
+    Split,
+    Trash2,
+    Webhook
 } from 'lucide-react';
-import { WorkflowNodeData } from '../../types/workflow';
-import { Button } from '../ui/button';
+import {WorkflowNodeData} from '../../types/workflow';
+import {Button} from '../ui/button';
+import {useWorkflowContext} from '../../contexts/WorkflowContext';
 
 const iconMap = {
     Play, Globe, Mail, Database, Clock, GitBranch, Filter, RefreshCw, Split, Webhook
@@ -57,14 +58,20 @@ export const WorkflowNode: React.FC<NodeProps> = ({
     id
 }) => {
     const nodeData = data as WorkflowNodeData;
+    const { onDeleteNode } = useWorkflowContext();
     const IconComponent = iconMap[nodeData.icon as keyof typeof iconMap];
     const nodeColor = getNodeColor(nodeData.type);
     const iconColor = getIconColor(nodeData.type);
 
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onDeleteNode(id);
+    };
+
     return (
         <div
             className={`
-        relative px-4 py-3 border-2 rounded-lg bg-white shadow-sm transition-all duration-200
+        group relative px-4 py-3 border-2 rounded-lg bg-white shadow-sm transition-all duration-200
         ${nodeColor}
         ${selected ? 'ring-2 ring-primary ring-offset-2' : ''}
         min-w-[200px] max-w-[250px]
@@ -116,10 +123,8 @@ export const WorkflowNode: React.FC<NodeProps> = ({
                         size="sm"
                         variant="ghost"
                         className="w-6 h-6 p-0 hover:bg-red-100 hover:text-red-600"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            // Handle delete click
-                        }}
+                        onClick={handleDelete}
+                        title="Удалить узел"
                     >
                         <Trash2 className="w-3 h-3" />
                     </Button>
