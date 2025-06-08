@@ -1,0 +1,212 @@
+import React, { useCallback, useState, useRef } from 'react';
+import {
+    ReactFlow,
+    Background,
+    Controls,
+    MiniMap,
+    useNodesState,
+    useEdgesState,
+    addEdge,
+    Connection,
+    Edge,
+    ReactFlowProvider,
+
+    Node
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+
+import { ComponentPalette } from './ComponentPalette';
+import { WorkflowNode } from './nodes/WorkflowNode';
+import { ComponentPaletteItem, WorkflowNodeData } from '../types/workflow';
+import { Button } from './ui/button';
+import { Save, Play, Download, Upload } from 'lucide-react';
+
+const nodeTypes = {
+    workflowNode: WorkflowNode,
+};
+
+const initialNodes: Node<WorkflowNodeData>[] = [
+    {
+        id: '1',
+        type: 'workflowNode',
+        position: { x: 100, y: 250 },
+        data: {
+            label: 'Start',
+            type: 'trigger',
+            description: 'Workflow starting point',
+            icon: 'Play'
+        }
+    }
+];
+
+const initialEdges: Edge[] = [];
+
+export const WorkflowEditor: React.FC = () => {
+    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+    const reactFlowWrapper = useRef<HTMLDivElement>(null);
+    const [draggedItem, setDraggedItem] = useState<ComponentPaletteItem | null>(null);
+
+    const onConnect = useCallback(
+        (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+        [setEdges]
+    );
+
+    const onDragStart = useCallback((event: React.DragEvent, item: ComponentPaletteItem) => {
+        setDraggedItem(item);
+        event.dataTransfer.effectAllowed = 'move';
+    }, []);
+
+    const onDragOver = useCallback((event: React.DragEvent) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+    }, []);
+
+    const onDrop = useCallback(
+        (event: React.DragEvent) => {
+            event.preventDefault();
+
+            if (!reactFlowWrapper.current || !reactFlowInstance || !draggedItem) {
+                return;
+            }
+
+            const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+            const position = reactFlowInstance.screenToFlowPosition({
+                x: event.clientX - reactFlowBounds.left,
+                y: event.clientY - reactFlowBounds.top,
+            });
+
+            const newNode: Node<WorkflowNodeData> = {
+                id: `${Date.now()}`,
+                type: 'workflowNode',
+                position,
+                data: {
+                    label: draggedItem.label,
+                    type: draggedItem.type,
+                    description: draggedItem.description,
+                    icon: draggedItem.icon
+                }
+            };
+
+            setNodes((nds) => nds.concat(newNode));
+            setDraggedItem(null);
+        },
+        [reactFlowInstance, draggedItem, setNodes]
+    );
+
+    const onSave = useCallback(() => {
+        if (reactFlowInstance) {
+            const flow = reactFlowInstance.toObject();
+            localStorage.setItem('workflow', JSON.stringify(flow));
+            console.log('Workflow saved:', flow);
+        }
+    }, [reactFlowInstance]);
+
+    const onLoad = useCallback(() => {
+        const savedFlow = localStorage.getItem('workflow');
+        if (savedFlow && reactFlowInstance) {
+            const flow = JSON.parse(savedFlow);
+            setNodes(flow.nodes || []);
+            setEdges(flow.edges || []);
+            reactFlowInstance.setViewport(flow.viewport);
+        }
+    }, [reactFlowInstance, setNodes, setEdges]);
+
+    const onExport = useCallback(() => {
+        if (reactFlowInstance) {
+            const flow = reactFlowInstance.toObject();
+            const dataStr = JSON.stringify(flow, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
+            const exportFileDefaultName = 'workflow.json';
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+    }, [reactFlowInstance]);
+
+    const onRun = useCallback(() => {
+        console.log('Running workflow with nodes:', nodes);
+        console.log('Running workflow with edges:', edges);
+        // Здесь будет логика выполнения workflow
+    }, [nodes, edges]);
+
+    return (
+        <div className="h-screen flex bg-background">
+            {/* Component Palette */}
+            <ComponentPalette onDragStart={onDragStart} />
+
+            {/* Main Editor Area */}
+            <div className="flex-1 flex flex-col">
+                {/* Toolbar */}
+                <div className="h-14 border-b border-border bg-card px-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-lg font-semibold">MonkeyJob Workflow Editor</h1>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={onLoad}>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Load
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={onSave}>
+                            <Save className="w-4 h-4 mr-2" />
+                            Save
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={onExport}>
+                            <Download className="w-4 h-4 mr-2" />
+                            Export
+                        </Button>
+                        <Button size="sm" onClick={onRun}>
+                            <Play className="w-4 h-4 mr-2" />
+                            Run
+                        </Button>
+                    </div>
+                </div>
+
+                {/* React Flow Canvas */}
+                <div className="flex-1" ref={reactFlowWrapper}>
+                    <ReactFlow
+                        nodes={nodes}
+                        edges={edges}
+                        onNodesChange={onNodesChange}
+                        onEdgesChange={onEdgesChange}
+                        onConnect={onConnect}
+                        onInit={setReactFlowInstance}
+                        onDrop={onDrop}
+                        onDragOver={onDragOver}
+                        nodeTypes={nodeTypes}
+                        fitView
+                        attributionPosition="bottom-left"
+                    >
+                        <Background color="#f1f5f9" />
+                        <Controls />
+                        <MiniMap
+                            nodeColor={(node) => {
+                                const nodeData = node.data as WorkflowNodeData;
+                                switch (nodeData.type) {
+                                    case 'trigger': return '#10b981';
+                                    case 'action': return '#3b82f6';
+                                    case 'condition': return '#f59e0b';
+                                    case 'timer': return '#8b5cf6';
+                                    default: return '#6b7280';
+                                }
+                            }}
+                            className="bg-background border border-border rounded-lg"
+                        />
+                    </ReactFlow>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export const WorkflowEditorWithProvider: React.FC = () => {
+    return (
+        <ReactFlowProvider>
+            <WorkflowEditor />
+        </ReactFlowProvider>
+    );
+}; 

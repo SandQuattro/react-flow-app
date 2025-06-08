@@ -1,46 +1,112 @@
-# Getting Started with Create React App
+# Workflow Editor
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Современный редактор workflow (визуальных процессов) на базе React Flow, похожий на n8n.
 
-## Available Scripts
+## Возможности
 
-In the project directory, you can run:
+- 🎨 **Drag & Drop палитра компонентов** - перетаскивайте узлы из палитры на canvas
+- 🔗 **Визуальное соединение узлов** - создавайте связи между узлами простым перетаскиванием
+- ⚙️ **Настройка узлов** - кликните на узел для настройки его параметров
+- 💾 **Сохранение/загрузка** - сохраняйте workflow в localStorage или экспортируйте в JSON
+- 🏃 **Выполнение workflow** - запускайте созданные процессы
+- 🎯 **Типы узлов**:
+  - **Triggers** - точки запуска workflow (Manual, Webhook, Schedule)
+  - **Actions** - действия (HTTP Request, Send Email, Database Query, Transform Data)
+  - **Conditions** - условная логика (IF, Filter, Switch)
+  - **Timers** - временные задержки
 
-### `npm start`
+## Технологии
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- **React 19** с TypeScript
+- **React Flow** для визуализации и управления узлами
+- **Tailwind CSS** для стилизации
+- **shadcn/ui** компоненты
+- **Lucide React** иконки
+- **CRACO** для настройки алиасов путей
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Установка и запуск
 
-### `npm test`
+```bash
+# Клонировать репозиторий
+git clone <repo-url>
+cd react-flow-app
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+# Установить зависимости
+npm install
 
-### `npm run build`
+# Запустить в режиме разработки
+npm start
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+# Сборка для продакшена
+npm run build
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Использование
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. **Создание workflow**:
+   - Перетащите компоненты из левой палитры на canvas
+   - Соедините узлы, перетащив от выходного порта одного узла к входному порту другого
+   - Настройте параметры узлов через панель настроек
 
-### `npm run eject`
+2. **Сохранение**:
+   - Нажмите "Save" для сохранения в localStorage
+   - Нажмите "Export" для скачивания JSON файла
+   - Нажмите "Load" для загрузки сохраненного workflow
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+3. **Выполнение**:
+   - Нажмите "Run" для запуска workflow (пока только логирование в консоль)
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Структура проекта
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+```
+src/
+├── components/
+│   ├── ui/                    # Базовые UI компоненты (shadcn/ui)
+│   ├── nodes/                 # Компоненты узлов
+│   ├── ComponentPalette.tsx   # Палитра компонентов
+│   ├── WorkflowEditor.tsx     # Основной редактор
+│   └── NodeSettingsPanel.tsx  # Панель настройки узлов
+├── data/
+│   └── componentPalette.ts    # Данные палитры компонентов
+├── types/
+│   └── workflow.ts            # TypeScript типы
+├── lib/
+│   └── utils.ts               # Утилиты
+└── App.tsx                    # Главный компонент
+```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## Функции
 
-## Learn More
+### Палитра компонентов
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- Поиск по компонентам
+- Группировка по категориям
+- Сворачивание/разворачивание категорий
+- Drag & Drop на canvas
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Узлы workflow
+
+- Цветовая кодировка по типам
+- Визуальные индикаторы входов/выходов
+- Специальная логика для условных узлов (True/False выходы)
+- Hover эффекты и интерактивность
+
+### Canvas
+
+- Зумирование и панорамирование
+- Мини-карта для навигации
+- Сетка фона
+- Автоматическое выравнивание
+
+## Планы развития
+
+- [ ] Валидация workflow
+- [ ] Реальное выполнение узлов
+- [ ] Импорт/экспорт в различных форматах
+- [ ] Шаблоны workflow
+- [ ] Система плагинов
+- [ ] Отладка и мониторинг выполнения
+
+## Лицензия
+
+MIT
